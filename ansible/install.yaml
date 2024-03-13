@@ -1,0 +1,209 @@
+---
+- name: Install Azul Zulu JDK on Debian 12
+  hosts: migratorydata
+  become: yes
+  tasks:
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+
+    - name: Install required packages
+      apt:
+        name: ['gnupg', 'ca-certificates', 'curl']
+        state: present
+
+    - name: Add Azul repository key
+      ansible.builtin.shell:
+        cmd: "curl -s https://repos.azul.com/azul-repo.key | gpg --yes --dearmor -o /usr/share/keyrings/azul.gpg"
+
+    - name: Add Azul repository to sources list
+      ansible.builtin.shell:
+        cmd: "echo 'deb [signed-by=/usr/share/keyrings/azul.gpg] https://repos.azul.com/zulu/deb stable main' | tee /etc/apt/sources.list.d/zulu.list"
+
+    - name: Update apt cache after adding new repository
+      apt:
+        update_cache: yes
+
+    - name: Install Zulu Java 8
+      apt:
+        name: zulu8-ca-jre-headless
+        state: present
+
+- name: Install MigratoryData server
+  hosts: migratorydata
+  become: yes
+  tasks:
+    - name: Include variables
+      include_vars: vars.yaml
+
+    - name: Download the Debian package
+      get_url:
+        url: "{{ package_url }}"
+        dest: "/tmp/{{ package_name }}"
+
+    - name: Install the Debian package
+      apt:
+        deb: "/tmp/{{ package_name }}"
+
+    - name: Enable service
+      ansible.builtin.systemd:
+        name: migratorydata
+        enabled: yes
+
+- name: Finalize configuration
+  hosts: migratorydata
+  become: yes
+  tasks:
+    - name: Include variables
+      include_vars: vars.yaml
+
+    - name: Get NODES
+      set_fact:
+        NODES: "{{ lookup('file', '{{ root_path }}/artifacts/clustermembers') }}"
+
+    - name: Copy migratorydata.conf
+      template:
+        src: "{{ root_path }}/configs/migratorydata.conf"
+        dest: "/etc/migratorydata/migratorydata.conf"
+        force: yes
+      vars:
+        node_ip: "{{ ansible_default_ipv4.address|default(ansible_all_ipv4_addresses[0]) }}"
+        cluster_nodes: "{{ NODES }}"
+      notify: Restart migratorydata
+
+    - name: Copy authorization-jwt/configuration.properties if it exists
+      copy:
+        src: "{{ root_path }}/configs/addons/authorization-jwt/configuration.properties"
+        dest: /etc/migratorydata/addons/authorization-jwt/configuration.properties
+        force: yes
+      notify: Restart migratorydata
+      when: "'{{ root_path }}/configs/addons/authorization-jwt/configuration.properties' is file"
+
+    - name: Copy authorization.jar if it exists
+      copy:
+        src: "{{ root_path }}/extensions/authorization.jar"
+        dest: /usr/share/migratorydata/extensions/authorization.jar
+        force: yes
+      notify: Restart migratorydata
+      when: "'{{ root_path }}/extensions/authorization.jar' is file"
+
+    - name: Copy audit-log4j/log4j2.xml if it exists
+      copy:
+        src: "{{ root_path }}/configs/addons/audit-log4j/log4j2.xml"
+        dest: /etc/migratorydata/addons/audit-log4j/log4j2.xml
+        force: yes
+      notify: Restart migratorydata
+      when: "'{{ root_path }}/configs/addons/audit-log4j/log4j2.xml' is file"
+
+    - name: Copy audit.jar if it exists
+      copy:
+        src: "{{ root_path }}/extensions/audit.jar"
+        dest: /usr/share/migratorydata/extensions/audit.jar
+        force: yes
+      notify: Restart migratorydata
+      when: "'{{ root_path }}/extensions/audit.jar' is file"
+
+    - name: Copy kafka/consumer.properties if it exists
+      copy:
+        src: "{{ root_path }}/configs/addons/kafka/consumer.properties"
+        dest: /etc/migratorydata/addons/kafka/consumer.properties
+        force: yes
+      notify: Restart migratorydata
+      when: "'{{ root_path }}/configs/addons/kafka/consumer.properties' is file"
+
+    - name: Copy kafka/producer.properties if it exists
+      copy:
+        src: "{{ root_path }}/configs/addons/kafka/producer.properties"
+        dest: /etc/migratorydata/addons/kafka/producer.properties
+        force: yes
+      notify: Restart migratorydata
+      when: "'{{ root_path }}/configs/addons/kafka/producer.properties' is file"
+
+    - name: Copy migratorydata
+      copy:
+        src: "{{ root_path }}/configs/migratorydata"
+        dest: /etc/default/migratorydata
+        force: yes
+      notify: Restart migratorydata
+
+    - name: Flush handlers
+      meta: flush_handlers
+
+  handlers:
+  - name: Restart migratorydata
+    systemd:
+      name: migratorydata
+      state: restarted
+
+- name: Install and configure Promtail
+  hosts: migratorydata
+  become: yes
+  tasks:
+    - name: Include variables
+      include_vars: vars.yaml
+
+    - name: Download Promtail binary
+      get_url:
+        url: "{{ promtail_url }}"
+        dest: "/tmp/promtail.zip"
+        mode: '0755'
+      when: monitor_ip is defined and monitor_ip != ''
+
+    - name: Install unzip if not present
+      apt:
+        name: unzip
+        state: present
+      when: monitor_ip is defined and monitor_ip != ''
+
+    - name: Unzip Promtail binary
+      unarchive:
+        src: "/tmp/promtail.zip"
+        dest: "/usr/local/bin"
+        remote_src: yes
+        creates: "/usr/local/bin/promtail-linux-amd64"
+      when: monitor_ip is defined and monitor_ip != ''
+
+    - name: Set promtail permissions
+      file:
+        path: "/usr/local/bin/promtail-linux-amd64"
+        mode: '0755'
+      when: monitor_ip is defined and monitor_ip != ''
+
+    - name: Create Promtail config directory
+      file:
+        path: "/etc/promtail"
+        state: directory
+      when: monitor_ip is defined and monitor_ip != ''
+
+    - name: Copy Promtail config file
+      template:
+        src: "{{ root_path }}/configs/monitoring/promtail.j2"
+        dest: "/etc/promtail/config.yaml"
+      when: monitor_ip is defined and monitor_ip != ''
+
+    - name: Create Promtail service
+      copy:
+        dest: "/etc/systemd/system/promtail.service"
+        content: |
+          [Unit]
+          Description=Promtail service
+          After=network.target
+
+          [Service]
+          ExecStart=/usr/local/bin/promtail-linux-amd64 -config.file /etc/promtail/config.yaml
+
+          [Install]
+          WantedBy=multi-user.target
+      when: monitor_ip is defined and monitor_ip != ''
+
+    - name: Reload systemd
+      systemd:
+        daemon_reload: yes
+      when: monitor_ip is defined and monitor_ip != ''
+
+    - name: Enable and start Promtail service
+      systemd:
+        name: promtail
+        enabled: yes
+        state: started
+      when: monitor_ip is defined and monitor_ip != ''

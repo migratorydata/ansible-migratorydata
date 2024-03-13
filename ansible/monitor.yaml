@@ -1,0 +1,101 @@
+- name: Install prometheus
+  hosts: monitor
+  roles:
+    - prometheus.prometheus.prometheus
+  vars:
+    prometheus_scrape_configs:
+      - job_name: "migratorydata"
+        metrics_path: "/metrics"
+        params:
+          username: ['admin']
+          password: ['pass']
+        static_configs:
+          - targets: "{{ groups['migratorydata'] | map('extract', hostvars, 'node_private_ip') | map('regex_replace', '^(.*)$','\\1:9900') | list  }}"
+
+- name: Install grafana
+  hosts: monitor
+  roles:
+    - grafana.grafana.grafana
+  vars:
+    grafana_version: 9.5.7
+    grafana_security:
+      admin_user: admin
+      admin_password: "{{ grafana_admin_pass | default('update_password', true) }}"
+    grafana_datasources:
+      - name: prometheus
+        type: prometheus
+        access: proxy
+        url: 'http://localhost:9090'
+        basicAuth: false
+      - name: loki
+        type: loki
+        access: proxy
+        url: 'http://localhost:3100'
+        basicAuth: false
+    grafana_dashboards:
+      - dashboard_id: 14004
+        revision_id: 1
+        datasource: prometheus
+
+- name: Install Loki
+  hosts: monitor
+  become: yes
+  tasks:
+    - name: Include variables
+      include_vars: vars.yaml
+
+    - name: Download Loki binary
+      get_url:
+        url: "{{ grafana_loki_url }}"
+        dest: /tmp/loki.zip
+        mode: '0755'
+
+    - name: Install unzip if not present
+      apt:
+        name: unzip
+        state: present
+
+    - name: Unzip Loki binary
+      unarchive:
+        src: /tmp/loki.zip
+        dest: /usr/local/bin
+        creates: "/usr/local/bin/loki"
+        remote_src: yes
+
+    - name: Set Loki permissions
+      file:
+        path: /usr/local/bin/loki-linux-amd64
+        mode: '0755'
+
+    - name: Ensure Loki config directory exists
+      file:
+        path: /etc/loki
+        state: directory
+        mode: '0755'
+
+    - name: Copy Loki config file
+      copy:
+        src: "{{ root_path }}/configs/monitoring/loki.yaml"
+        dest: /etc/loki/config.yaml
+
+    - name: Create Loki service
+      copy:
+        dest: /etc/systemd/system/loki.service
+        content: |
+          [Unit]
+          Description=Loki service
+          After=network.target
+
+          [Service]
+          ExecStart=/usr/local/bin/loki-linux-amd64 -config.file /etc/loki/config.yaml
+
+          [Install]
+          WantedBy=multi-user.target
+      become: yes
+
+    - name: Start Loki service
+      systemd:
+        name: loki
+        state: started
+        enabled: yes
+      become: yes

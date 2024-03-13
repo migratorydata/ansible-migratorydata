@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="warn">
+    <Appenders>
+        <!-- to activate access logs, set the parameter `Extension.Audit.Access = true` in the `migratorydata.conf` file -->
+        <!-- access log configuration with rollover policies on size (100MB) and on time (24 hours) -->
+        <RollingFile name="access-roll-by-time-and-size"
+                     fileName="/var/log/migratorydata/all/access_log.log"
+                     filePattern="/var/log/migratorydata/all/access_log.%d{MM-dd-yyyy-HH}.%i.log.gz"
+                     ignoreExceptions="false">
+            <PatternLayout>
+                <Pattern>[%d{yyyy-MM-dd'T'HH:mm:ss.SZ}] %m%n</Pattern>
+            </PatternLayout>
+            <Policies>
+                <SizeBasedTriggeringPolicy size="100 MB" />
+                <TimeBasedTriggeringPolicy interval="24"/>
+            </Policies>
+        </RollingFile>
+
+        <!-- to activate message logs, set the parameter `Extension.Audit.Message = true` in the `migratorydata.conf` file -->
+        <!-- message log configuration with rollover policies on size (100MB) and on time (24 hours) -->
+        <RollingFile name="message-roll-by-time-and-size"
+                     fileName="/var/log/migratorydata/all/message_log.log"
+                     filePattern="/var/log/migratorydata/all/message_log.%d{MM-dd-yyyy-HH}.%i.log.gz"
+                     ignoreExceptions="false">
+            <PatternLayout>
+                <Pattern>[%d{yyyy-MM-dd'T'HH:mm:ss.SZ}] %replace{%m}{[\r\n]}{}%n</Pattern>
+            </PatternLayout>
+            <Policies>
+                <SizeBasedTriggeringPolicy size="100 MB" />
+                <TimeBasedTriggeringPolicy interval="24"/>
+            </Policies>
+        </RollingFile>
+
+        <!-- to activate cache logs, set the parameter `Extension.Audit.Cache = true` in the `migratorydata.conf` file -->
+        <!-- cache log configuration with rollover policies on size (100MB) and on time (24 hours) -->
+        <RollingFile name="cache-roll-by-time-and-size"
+                     fileName="/var/log/migratorydata/all/cache_log.log"
+                     filePattern="/var/log/migratorydata/all/cache_log.%d{MM-dd-yyyy-HH}.%i.log.gz"
+                     ignoreExceptions="false">
+            <PatternLayout>
+                <Pattern>[%d{yyyy-MM-dd'T'HH:mm:ss.SZ}] %m%n</Pattern>
+            </PatternLayout>
+            <Policies>
+                <SizeBasedTriggeringPolicy size="100 MB" />
+                <TimeBasedTriggeringPolicy interval="24"/>
+            </Policies>
+        </RollingFile>
+
+        <!-- to activate stats logs, set the parameter `Extension.Audit.Stats = true` in the `migratorydata.conf` file -->
+        <!-- stats log configuration with rollover policies on size (100MB) and on time (24 hours) -->
+        <RollingFile name="stats-roll-by-time-and-size"
+                     fileName="/var/log/migratorydata/all/stats_log.log"
+                     filePattern="/var/log/migratorydata/all/stats_log.%d{MM-dd-yyyy-HH}.%i.log.gz"
+                     ignoreExceptions="false">
+            <PatternLayout>
+                <Pattern>[%d{yyyy-MM-dd'T'HH:mm:ss.SZ}] %m%n</Pattern>
+            </PatternLayout>
+            <Policies>
+                <SizeBasedTriggeringPolicy size="100 MB" />
+                <TimeBasedTriggeringPolicy interval="24"/>
+            </Policies>
+        </RollingFile>
+
+        <!-- Console Appender -->
+        <Console name="console" target="SYSTEM_OUT" follow="true">
+            <PatternLayout pattern="${LOG_PATTERN}"/>
+        </Console>
+
+    </Appenders>
+    <Loggers>
+        <Logger name="com.migratorydata.extensions.audit.FileLogAccessListener" level="debug" additivity="false">
+            <appender-ref ref="access-roll-by-time-and-size" level="debug" />
+        </Logger>
+        <Logger name="com.migratorydata.extensions.audit.FileLogCacheListener" level="debug" additivity="false">
+            <appender-ref ref="cache-roll-by-time-and-size" level="debug" />
+        </Logger>
+        <Logger name="com.migratorydata.extensions.audit.FileLogMessageListener" level="debug" additivity="false">
+            <appender-ref ref="message-roll-by-time-and-size" level="debug" />
+        </Logger>
+        <Logger name="com.migratorydata.extensions.audit.FileLogStatsListener" level="debug" additivity="false">
+            <appender-ref ref="stats-roll-by-time-and-size" level="debug" />
+        </Logger>
+
+        <Root level="debug" additivity="false">
+            <appender-ref ref="console" />
+        </Root>
+    </Loggers>
+</Configuration>

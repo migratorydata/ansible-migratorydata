@@ -1,0 +1,28 @@
+#!/bin/bash
+
+# Various extra options for MigratoryData which can be used to define or override parameters of config file. Example:
+#
+#   MIGRATORYDATA_EXTRA_OPTS="-DMemory=64000MB -DLogFolder=/tmp/mylogs -DLogLevel=INFO"
+#
+# NOTE -- All options should be defined without spaces and quotes. For example:
+#         use -DMemory=512MB,  rather than -DMemory='512 MB' or
+#         use -DLogFolder=/tmp/somefile, rather than -DLogFolder="/tmp/some file"
+MIGRATORYDATA_EXTRA_OPTS="-Dlog4j.configurationFile=/etc/migratorydata/addons/audit-log4j/log4j2.xml"
+
+# Various extra options for Java. Usage example:
+#
+#    MIGRATORYDATA_JAVA_EXTRA_OPTS="-XX:NewSize=48000m -XX:MaxNewSize=48000m"
+#
+MIGRATORYDATA_JAVA_EXTRA_OPTS=""
+
+# Options for Java Garbage Collection. These options should *not* include Java options for GC logging which should be
+# provided using MIGRATORYDATA_JAVA_GC_LOG_OPTS
+MIGRATORYDATA_JAVA_GC_OPTS="-verbosegc -XX:+UseParallelOldGC"
+
+# Options for Java Garbage Collection logs. If not defined, the start script will automatically configure this variable
+# with default values which are sufficient for most cases.
+#MIGRATORYDATA_JAVA_GC_LOG_OPTS=""
+
+# Define the max number of socket descriptors to be used by the max number of users to be handled by MigratoryData. If
+# not defined, the default value is one million which is usually sufficient for most cases.
+#MIGRATORYDATA_MAX_DESCRIPTORS=1000000

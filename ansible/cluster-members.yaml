@@ -1,0 +1,11 @@
+- hosts: migratorydata
+  become: no
+  tasks:
+    - name: Include variables
+      include_vars: vars.yaml
+
+    - name: Create file with cluster members addresses from node_private_ips of the migratorydata hosts
+      ansible.builtin.copy:
+        content: "{{ groups['migratorydata'] | map('extract', hostvars, 'node_private_ip') | map('regex_replace', '^(.*)$','\\1:8801') | list | join(',')}}"
+        dest: "{{ root_path }}/artifacts/clustermembers"
+      delegate_to: localhost
