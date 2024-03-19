@@ -2,13 +2,13 @@
 
 ## Introduction
 
-Welcome to the documentation for `ansible-migratorydata`. This guide will walk you through the process of setting up a cluster of servers with MigratoryData Push Server using Ansible, a powerful automation tool that can configure systems, deploy software, and orchestrate more advanced IT tasks.
+Welcome to the documentation for `ansible-migratorydata`. This guide will walk you through the process of setting up a cluster of servers with MigratoryData server using Ansible, a powerful automation tool that can configure systems, deploy software, and orchestrate more advanced IT tasks.
 
-Our `ansible/install.yaml` script simplifies the process of installing a MigratoryData Push Server cluster. With this script, you can easily automate the setup of your cluster, saving you time and ensuring consistency across your servers.
+Our `ansible/install.yaml` script simplifies the process of installing a MigratoryData server cluster. With this script, you can easily automate the setup of your cluster, saving you time and ensuring consistency across your servers.
 
 In addition to the installation, we also provide a `ansible/monitor.yaml` script for setting up monitoring for your cluster. This script leverages Prometheus and Grafana, two leading open-source tools for monitoring and visualizing metrics. With this script, you can keep a close eye on your cluster's statistics and logs, helping you to maintain the health and performance of your servers.
 
-Finally, we understand that keeping your servers up-to-date is crucial for security and performance. That's why we've included an `ansible/update.yaml` script that automates the process of updating the MigratoryData Push Server on all instances. With this script, you can ensure that your cluster is always running the latest version of MigratoryData Push Server.
+Finally, we understand that keeping your servers up-to-date is crucial for security and performance. That's why we've included an `ansible/update.yaml` script that automates the process of updating the MigratoryData server on all instances. With this script, you can ensure that your cluster is always running the latest version of MigratoryData server.
 
 Whether you're setting up a new cluster, monitoring its performance, or updating your servers, `ansible-migratorydata` provides the tools you need to automate these tasks.
 
@@ -38,7 +38,7 @@ git clone https://github.com/migratorydata/ansible-migratorydata
 cd ansible-migratorydata
 ```
 
-Update if necessary the configuration files from the `deploy/configs` directory. See the [Configuration](https://migratorydata.com/docs/server/configuration/) guide for more details. If you developed custom extensions, add them to the the `deploy/extensions` directory.
+Update if necessary the configuration files from the `configs` directory. See the [Configuration](https://migratorydata.com/docs/server/configuration/) guide for more details. If you developed custom extensions, add them to the the `extensions` directory.
 
 ## SSH keys
 
@@ -72,7 +72,7 @@ By running these commands, you ensure that your Ansible environment has the nece
 1. Creating the `artifacts/hosts.ini` file: 
 - This file is crucial for Ansible as it defines the hosts (or machines) that Ansible will manage. The `hosts.ini` file is created in the `artifacts` directory and contains two groups: `migratorydata` and `monitor`.
 
-- The `migratorydata` group lists the machines that will run the MigratoryData Push Server. Each machine is defined by its public IP address, the Ansible user, the path to the SSH private key, the private IP of the node, and the IP of the monitoring machine(optional).
+- The `migratorydata` group lists the machines that will run the MigratoryData server. Each machine is defined by its public IP address, the Ansible user, the path to the SSH private key, the private IP of the node, and the IP of the monitoring machine(optional).
 - The `monitor` group lists the machines that will run the monitoring tools (Prometheus and Grafana). Each machine is defined by its IP address and the Ansible user.
   - While monitoring is a valuable tool for maintaining the health and performance of your MigratoryData cluster, it is not a mandatory requirement for the installation and operation of the cluster. The `monitor` group in the `hosts.ini` file is optional and the MigratoryData cluster can be installed and run without it. Also the `monitor_ip` is optional and can be removed from the `migratorydata` group.
 
@@ -90,7 +90,7 @@ monitor_machine_ip ansible_user=admin ansible_become=True
 ```
 
 2. Creating the `clustermembers` file: 
-- This file is used by the `ansible/install.yaml` playbook to update MigratoryData Push Server configuration file with the nodes addresses that  are part of the cluster. The `clustermembers` file is created in the `artifacts` directory using the `ansible-playbook ansible/cluster-members.yaml -i artifacts/hosts.ini` command. This command runs the `cluster-members.yaml` playbook with the hosts.ini file as the inventory, generating the `clustermembers` file with the necessary information.
+- This file is used by the `ansible/install.yaml` playbook to update MigratoryData server configuration file with the nodes addresses that  are part of the cluster. The `clustermembers` file is created in the `artifacts` directory using the `ansible-playbook ansible/cluster-members.yaml -i artifacts/hosts.ini` command. This command runs the `cluster-members.yaml` playbook with the hosts.ini file as the inventory, generating the `clustermembers` file with the necessary information.
 
 To create the `artifacts/clustermembers` file, run the following command:
 
@@ -98,9 +98,9 @@ To create the `artifacts/clustermembers` file, run the following command:
 ansible-playbook ansible/cluster-members.yaml -i artifacts/hosts.ini
 ```
 
-## Install MigratoryData Push server
+## Install MigratoryData server
 
-By running these commands, you initiate the installation of the MigratoryData Push Server on your infrastructure. The `ansible/install.yaml` playbook automates the installation process, ensuring a consistent setup across all your servers.
+By running these commands, you initiate the installation of the MigratoryData server on your infrastructure. The `ansible/install.yaml` playbook automates the installation process, ensuring a consistent setup across all your servers.
 
 ```bash
 # used to disable SSH host key checking
@@ -127,9 +127,9 @@ ansible-playbook ansible/monitor.yaml -i artifacts/hosts.ini
 
 ## Verifying deployment
 
-After you have successfully installed the MigratoryData Push Server on your cluster, it's important to verify that the deployment was successful. Here's how you can do that:
+After you have successfully installed the MigratoryData server on your cluster, it's important to verify that the deployment was successful. Here's how you can do that:
 
-- You can access the MigratoryData cluster by navigating to the public IP address of any of the virtual machines in your web browser. The MigratoryData Push Server runs on port 8800 by default, so you would access it at `http://machine_public_ip:8800`. If the server is running correctly, you should see the MigratoryData welcome page.
+- You can access the MigratoryData cluster by navigating to the public IP address of any of the virtual machines in your web browser. The MigratoryData server runs on port 8800 by default, so you would access it at `http://machine_public_ip:8800`. If the server is running correctly, you should see the MigratoryData welcome page.
 
 - You can also verify the deployment by SSH-ing into the virtual machines. You can do this using the command `ssh admin@machine_public_ip` or `ssh -i ssh_private_key admin@machine_public_ip` if you need to specify a private key. Once logged in, you can check the status of the MigratoryData service and inspect the logs to ensure everything is running as expected.
 
@@ -142,11 +142,18 @@ systemctl status migratorydata
 nano /var/log/migratorydata/all/out.log
 ```
 
-## Update MigratoryData Push server
+- To access the monitoring tools, you can use the public IP address of the monitor virtual machine. By default the username and password for Grafana are `admin` and `update_password` respectively. To access the MigratoryData dashboard, go to Dashboard -> General in the Grafana UI. For logging, go to Explore and select the `Loki` data source.
 
-The `package_url` and `package_name` variables in the `ansible/vars.yaml` file should be updated to point to the new version of the MigratoryData Push Server. The `package_url` is the URL where the new version can be downloaded, and the `package_name` is the name of the package file.
+```bash
+# Access Grafana
+http://monitor-public-ip-grafana-access:3000
+```
 
-Update MigratoryData Server running the following commands: 
+## Update MigratoryData server
+
+The `package_url` and `package_name` variables in the `ansible/vars.yaml` file should be updated to point to the new version of the MigratoryData server. The `package_url` is the URL where the new version can be downloaded, and the `package_name` is the name of the package file.
+
+Update MigratoryData server running the following commands: 
 
 ```bash
 # used to disable SSH host key checking
@@ -155,7 +162,7 @@ export ANSIBLE_HOST_KEY_CHECKING=False
 ansible-playbook ansible/update.yaml -i artifacts/hosts.ini
 ```
 
-The `ansible/update.yaml` playbook contains tasks that update the MigratoryData Push Server on the machines specified in the `hosts.ini` inventory file. The playbook is designed to sequentially update the MigratoryData Push Server on each server in your infrastructure. The playbook operates on one host to ensure service availability during the update process. The tasks executed on each host include stopping the MigratoryData service, downloading the new MigratoryData Push Server package, updating the package, and restarting the service. After updating each server, Ansible pauses for a period of time before moving to the next server, allowing the updated server to fully restart and rejoin the cluster before the next server is updated.
+The `ansible/update.yaml` playbook contains tasks that update the MigratoryData server on the machines specified in the `hosts.ini` inventory file. The playbook is designed to sequentially update the MigratoryData server on each server in your infrastructure. The playbook operates on one host to ensure service availability during the update process. The tasks executed on each host include stopping the MigratoryData service, downloading the new MigratoryData server package, updating the package, and restarting the service. After updating each server, Ansible pauses for a period of time before moving to the next server, allowing the updated server to fully restart and rejoin the cluster before the next server is updated.
 
 ## Build realtime apps
 
